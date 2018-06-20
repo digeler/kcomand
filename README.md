@@ -6,5 +6,6 @@ to run currently i have only one option cshare.
 
 ps : make sure you edit the auth file and also used az login to connect to the correct sub
 
+short video here : https://youtu.be/c2NFa6EXl9s
 
 
