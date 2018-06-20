@@ -224,7 +224,7 @@ Example: kcommand cshare `,
 		var vmname string
 		fmt.Println("please enter the vm name you would like to collect the logs from ")
 		fmt.Scanf("%s", &vmname)
-		if &vmname == nil {
+		if vmname == "" {
 			fmt.Println("vmname cannot be nill")
 			os.Exit(1)
 		}
