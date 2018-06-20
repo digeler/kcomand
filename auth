@@ -1,0 +1,16 @@
+{
+  "clientId": "******",
+  "clientSecret": "*******",
+  "subscriptionId": "928f4e7e-2c28-4063-a56e-6f1e6f2bb73c",
+  "tenantId": "72f988bf-86f1-41af-91ab-2d7cd011db47",
+  "activeDirectoryEndpointUrl": "https://login.microsoftonline.com",
+  "resourceManagerEndpointUrl": "https://management.azure.com/",
+  "activeDirectoryGraphResourceId": "https://graph.windows.net/",
+  "sqlManagementEndpointUrl": "https://management.core.windows.net:8443/",
+  "galleryEndpointUrl": "https://gallery.azure.com/",
+  "managementEndpointUrl": "https://management.core.windows.net/",
+  "rgname": "MC_aksingress_ingdin_westeurope",    
+  "location": "westeurope"
+  
+  }
+
