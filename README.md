@@ -9,8 +9,13 @@ ps : make sure you edit the auth file and also used az login to connect to the c
 short video here : https://youtu.be/c2NFa6EXl9s
 
 Available Commands:
+
   cshare this will create storage account and mount the share to the vms and start collecting the logs for the vm you want
+    
   getIpTables   Get the list of ip tables from specific node
+  
   getcnilog     This will collect al CNI related logs
+  
   getkubeconfig This will collect your kube configuration to a file
+  
   help          Help about any command
