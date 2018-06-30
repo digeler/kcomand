@@ -2,10 +2,15 @@
 clone the repo using git clone : git clone https://github.com/digeler/kcomand.git
 
 to run currently i have only one option cshare.
-./kcomand cshare  and then press enter.
+./kcomand and then press enter.
 
 ps : make sure you edit the auth file and also used az login to connect to the correct sub
 
 short video here : https://youtu.be/c2NFa6EXl9s
 
-
+Available Commands:
+  cshare this will create storage account and mount the share to the vms and start collecting the logs for the vm you want
+  getIpTables   Get the list of ip tables from specific node
+  getcnilog     This will collect al CNI related logs
+  getkubeconfig This will collect your kube configuration to a file
+  help          Help about any command
