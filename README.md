@@ -14,8 +14,8 @@ Available Commands:
     
   getIpTables --  Get the list of ip tables from specific node
   
-  getcnilog --    This will collect al CNI related logs
+  getcnilog --    This will collect all CNI related logs from specific node
   
-  getkubeconfig -- This will collect your kube configuration to a file
+  getkubeconfig -- This will collect your kube configuration runtime to a file
   
   help    --     Help about any command
