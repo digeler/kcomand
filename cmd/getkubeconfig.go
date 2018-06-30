@@ -17,91 +17,21 @@ package cmd
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"fmt"
 	"log"
-	"logsub/packages/nic"
 	"logsub/packages/sub"
 	"net/url"
 	"os"
 	"os/exec"
 	"os/user"
-	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/storage/mgmt/storage"
 	"github.com/Azure/azure-storage-file-go/2017-07-29/azfile"
-	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
-const (
-	// DefaultBaseURI is the default URI used for the service Network
-	DefaultBaseURI = "https://management.azure.com"
-)
-
-var (
-	ctx = context.Background()
-
-	authorizer autorest.Authorizer
-	rg         string
-	global     string
-)
-
-func createshare(vmname string, rgname string) error {
-	fmt.Println("Going to create the mount /mnt/forlogs/ on vm ", vmname)
-	fmt.Printf("using command az vm run-command  invoke --resource-group %s --name %s --command-id RunShellScript --scripts mkdir -p /mnt/forlogs", rgname, vmname)
-	color.Red("\n make sure the vmname and rg are correct before pressing enter\n")
-	color.Green("Press 'Enter' to continue...")
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
-	color.Green("please wait .... processing......")
-	cmd := exec.Command("az", "vm", "run-command", "invoke", "--resource-group", rgname, "--name", vmname, "--command-id", "RunShellScript", "--scripts", "mkdir -p /mnt/forlogs")
-
-	err := cmd.Run()
-	if err != nil {
-		fmt.Printf("completed : %v\n", err)
-		fmt.Printf("please ignore if exit 1\n")
-	}
-	return err
-}
-
-func createstorage(ctx context.Context, storageAccountsClient storage.AccountsClient, rgname string, location string) (s storage.Account, err error) {
-
-	saname := nic.Randname(5)
-	r := strings.Replace(saname, "", "k8log", 1)
-	m := strings.ToLower(r)
-	//fmt.Printf("creating storage account for logging name %s ", m)
-	future, err := storageAccountsClient.Create(
-		ctx,
-		rgname,
-		m,
-		storage.AccountCreateParameters{
-			Sku: &storage.Sku{
-				Name: storage.StandardLRS},
-			Kind:     storage.Storage,
-			Location: to.StringPtr(location),
-			AccountPropertiesCreateParameters: &storage.AccountPropertiesCreateParameters{},
-		})
-	if err != nil {
-		return s, fmt.Errorf("cannot create storage account: %v", err)
-	}
-
-	err = future.WaitForCompletion(ctx, storageAccountsClient.Client)
-	if err != nil {
-		return s, fmt.Errorf("cannot get the storage account create future response: %v", err)
-	}
-
-	return future.Result(storageAccountsClient)
-
-}
-func holdkey(key string) string {
-	global := key
-	return global
-
-}
-
-func dooper(vmname string, rgname string, storagename string) {
+func getk8sconfig(vmname string, rgname string, storagename string) {
 	buf := bytes.Buffer{}
 
 	//install cifs
@@ -119,62 +49,20 @@ func dooper(vmname string, rgname string, storagename string) {
 	buf.WriteString("username=" + storagename)
 	buf.WriteString(",password=" + global)
 	buf.WriteString(",dir_mode=0777,file_mode=0777,sec=ntlmssp'\n")
-	//kubelog command **************************************
-	buf.WriteString("az vm run-command invoke --resource-group " + rgname)
-	buf.WriteString(" --name " + vmname)
-	buf.WriteString(" --command-id RunShellScript --scripts ")
-	buf.WriteString("'journalctl -u kube* --no-pager>>")
-	buf.WriteString("/mnt/forlogs/" + vmname)
-	buf.WriteString(".log'\n")
-	//clusterlog**************************************
-	buf.WriteString("az vm run-command invoke --resource-group " + rgname)
-	buf.WriteString(" --name " + vmname)
-	buf.WriteString(" --command-id RunShellScript --scripts ")
-	buf.WriteString("'cp /var/log/azure/cluster-provision.log ")
-	buf.WriteString("/mnt/forlogs/" + vmname)
-	buf.WriteString(".cluster-provision.log'\n")
-	//syslog//////////////////////////////////
-	buf.WriteString("az vm run-command invoke --resource-group " + rgname)
-	buf.WriteString(" --name " + vmname)
-	buf.WriteString(" --command-id RunShellScript --scripts ")
-	buf.WriteString("'mkdir /mnt/forlogs/syslog" + vmname)
-	buf.WriteString(" && cp /var/log/syslog* /mnt/forlogs/syslog'" + vmname)
-	buf.WriteString("\n")
-	//journalall/////////////////////////////////////
-	buf.WriteString("az vm run-command invoke --resource-group " + rgname)
-	buf.WriteString(" --name " + vmname)
-	buf.WriteString(" --command-id RunShellScript --scripts ")
-	buf.WriteString("'journalctl --no-pager >>")
-	buf.WriteString(" /mnt/forlogs/" + vmname)
-	buf.WriteString(".journal'\n")
-	//iptables/////////////////////////////////////////////////////
-	buf.WriteString("az vm run-command invoke --resource-group " + rgname)
-	buf.WriteString(" --name " + vmname)
-	buf.WriteString(" --command-id RunShellScript --scripts ")
-	buf.WriteString("'sudo iptables-save >>")
-	buf.WriteString(" /mnt/forlogs/" + vmname)
-	buf.WriteString(".iptable'\n")
-	//get k8s config //////////////////////////////////
+	//////////////////////
 	//get k8s config **************************************
 	buf.WriteString("az vm run-command invoke --resource-group " + rgname)
 	buf.WriteString(" --name " + vmname)
 	buf.WriteString(" --command-id RunShellScript --scripts ")
-	buf.WriteString("'ps aux | grep kube* >> ")
+	buf.WriteString("'ps aux | grep kube* >>")
 	buf.WriteString("/mnt/forlogs/" + vmname)
-	buf.WriteString(".k8sruntime'\n")
-	//get cni logs **************************************
-	buf.WriteString("az vm run-command invoke --resource-group " + rgname)
-	buf.WriteString(" --name " + vmname)
-	buf.WriteString(" --command-id RunShellScript --scripts ")
-	buf.WriteString("'cp /var/log/azure-*")
-	buf.WriteString(" /mnt/forlogs/'\n")
+	buf.WriteString("k8sconfig.log'\n")
 
 	mycmd := buf.String()
 	fmt.Println("\nGoing to execute\n", mycmd)
-
 	usr, _ := user.Current()
 
-	f, err := os.Create(usr.HomeDir + "/cmd.sh")
+	f, err := os.Create(usr.HomeDir + "/iptables.sh")
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -188,7 +76,7 @@ func dooper(vmname string, rgname string, storagename string) {
 
 	f.Sync()
 	//fmt.Println(usr.HomeDir + "/cmd.sh")
-	cmd := exec.Command("sh", usr.HomeDir+"/cmd.sh")
+	cmd := exec.Command("sh", usr.HomeDir+"/iptables.sh")
 
 	err = cmd.Run()
 	if err != nil {
@@ -201,24 +89,12 @@ func dooper(vmname string, rgname string, storagename string) {
 
 }
 
-// cshareCmd represents the cshare command
-var cshareCmd = &cobra.Command{
-	Use:   "cshare",
-	Short: "this will create storage account and mount the share to the vms and start collecting the logs for the vm you want",
-	Long: `This command will ask you for the vm name and will collect all the logs needed:
-
-Example: kcommand cshare 
-it will collect the following 
-- cni logs
-- iptables
-- kube run time
-- journalctl --no-pager
-- Syslog`,
+// getkubeconfigCmd represents the getkubeconfig command
+var getkubeconfigCmd = &cobra.Command{
+	Use:   "getkubeconfig",
+	Short: "This will collect your kube configuration to a file",
+	Long:  `This will execute ps aux | grep kube* ,this will collect the runtime config`,
 	Run: func(cmd *cobra.Command, args []string) {
-
-		//fmt.Println("please enter the vm to mount the share on ", vmname)
-		//fmt.Scanf("%s", &vmname)
-		//fmt.Println(vmname)
 		token, subid, rgname, vnetname, loglocation, subnetName, location, sshpubkey, _ := sub.Readfromauth()
 		fmt.Printf("\n\n")
 		k := color.New(color.FgCyan, color.Bold)
@@ -275,13 +151,22 @@ it will collect the following
 			log.Fatal(err)
 		}
 		fmt.Println("share was created", shareURL.String())
-		dooper(vmname, rgname, *n)
+		fmt.Println("getting the k8s runtime to the share")
+		getk8sconfig(vmname, rgname, *n)
 
 	},
 }
 
 func init() {
+	rootCmd.AddCommand(getkubeconfigCmd)
 
-	rootCmd.AddCommand(cshareCmd)
+	// Here you will define your flags and configuration settings.
 
+	// Cobra supports Persistent Flags which will work for this command
+	// and all subcommands, e.g.:
+	// getkubeconfigCmd.PersistentFlags().String("foo", "", "A help for foo")
+
+	// Cobra supports local flags which will only run when this command
+	// is called directly, e.g.:
+	// getkubeconfigCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
